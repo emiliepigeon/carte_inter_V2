@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Interactive</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Carte Interactive</h1>
+    <div id="instructions">
+        Cliquez sur la carte pour ajouter des points de départ. Double-cliquez pour définir un point d'arrivée.
+    </div>
+    <canvas id="carteCanvas" width="800" height="600"></canvas>
+    <div class="button-container">
+        <button id="startButton">Lancer le calcul</button>
+        <button id="stopButton">Arrêter</button>
+        <button id="resetButton">Réinitialiser</button>
+        <button id="clearRoutesButton">Effacer les routes</button>
+    </div>
+    <div id="routeHistory">
+        <h2>Historique des routes</h2>
+        <ul id="historyList"></ul>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
