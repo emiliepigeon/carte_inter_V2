@@ -7,13 +7,11 @@ let fixedEndPoint = null; // Point d'arrivée unique et fixe
 let graph = {}; // Représentation du graphe
 let isCalculating = false; // État du calcul
 let routeHistory = []; // Historique des trajets calculés
-
 let canvas = document.getElementById('carteCanvas');
 let ctx = canvas.getContext('2d');
 
 // Boutons
 let startButton = document.getElementById('startButton');
-let stopButton = document.getElementById('stopButton');
 let resetButton = document.getElementById('resetButton');
 let clearRoutesButton = document.getElementById('clearRoutesButton');
 
@@ -30,7 +28,7 @@ img.onload = () => {
 function redrawMap() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    
+
     // Dessiner tous les points
     points.forEach((point) => {
         if (point === seaStartPoint) {
@@ -56,7 +54,6 @@ let lastClickedPoint = null;
 
 canvas.addEventListener('click', function(event) {
     if (isCalculating) return;
-
     let x = event.offsetX;
     let y = event.offsetY;
     let newPoint = { x: x, y: y };
@@ -68,9 +65,8 @@ canvas.addEventListener('click', function(event) {
         clickCount = 1;
         lastClickedPoint = newPoint;
     }
-    
+
     if (clickTimer) clearTimeout(clickTimer);
-    
     clickTimer = setTimeout(() => {
         handleClick(lastClickedPoint);
         clickCount = 0;
@@ -79,7 +75,6 @@ canvas.addEventListener('click', function(event) {
 
 function handleClick(point) {
     if (!point) return;
-
     // Supprimer le point de son ancienne catégorie
     if (point === seaStartPoint) seaStartPoint = null;
     landDeparturePoints = landDeparturePoints.filter(p => p !== point);
@@ -165,16 +160,13 @@ startButton.addEventListener('click', function() {
     updateHistoryList();
 });
 
-stopButton.addEventListener('click', function() {
-    isCalculating = false;
-    redrawMap();
-});
-
 resetButton.addEventListener('click', function() {
     isCalculating = false;
+    points = [];
+    seaStartPoint = null;
     landDeparturePoints = [];
     intermediatePoints = [];
-    points = points.filter(p => p === seaStartPoint || p === fixedEndPoint);
+    fixedEndPoint = null;
     graph = {};
     redrawMap();
 });
@@ -207,13 +199,16 @@ function addEdge(from, to, weight) {
 }
 
 function calculateAllRoutes() {
-    routeHistory = []; // Clear previous routes
+    if (routeHistory.length >= 5) {
+        alert("Vous avez déjà calculé 5 routes. Veuillez en supprimer pour en calculer de nouvelles.");
+        return;
+    }
+    
     landDeparturePoints.forEach((landStartPoint) => {
         let path = [seaStartPoint];
         let landStartIndex = points.indexOf(landStartPoint);
         let firstHalfIntermediates = intermediatePoints.filter(p => points.indexOf(p) < landStartIndex);
         let secondHalfIntermediates = intermediatePoints.filter(p => points.indexOf(p) > landStartIndex);
-        
         path = path.concat(firstHalfIntermediates);
         path.push(landStartPoint);
         path = path.concat(secondHalfIntermediates);
@@ -231,15 +226,11 @@ function calculateAllRoutes() {
             totalDistance: totalDistance
         };
         routeHistory.push(route);
-        
-        console.log(`Route ${routeHistory.length}:`, route.path, 
-                    `Distance mer-terre: ${distanceSeaToLand.toFixed(2)}`,
-                    `Distance terre-arrivée: ${distanceLandToEnd.toFixed(2)}`,
-                    `Distance totale: ${totalDistance.toFixed(2)}`);
+        console.log(`Route ${routeHistory.length}:`, route.path,
+            `Distance mer-terre: ${distanceSeaToLand.toFixed(2)}`,
+            `Distance terre-arrivée: ${distanceLandToEnd.toFixed(2)}`,
+            `Distance totale: ${totalDistance.toFixed(2)}`);
     });
-    
-    // Trier les routes par distance totale
-    routeHistory.sort((a, b) => a.totalDistance - b.totalDistance);
 }
 
 function calculateRouteDistance(routePoints) {
@@ -255,33 +246,26 @@ function drawRouteWithBezier(path, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
-
     for (let i = 0; i < path.length - 1; i++) {
         let p1 = path[i];
         let p2 = path[i + 1];
-        
         if (i === 0) {
             ctx.moveTo(p1.x, p1.y);
         }
-
         let midPoint = {
             x: (p1.x + p2.x) / 2,
             y: (p1.y + p2.y) / 2
         };
-        
         let controlPoint1 = {
             x: midPoint.x + (midPoint.y - p1.y) * 0.5,
             y: midPoint.y - (midPoint.x - p1.x) * 0.5
         };
-
         let controlPoint2 = {
             x: midPoint.x - (midPoint.y - p2.y) * 0.5,
             y: midPoint.y + (midPoint.x - p2.x) * 0.5
         };
-        
         ctx.bezierCurveTo(controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y, p2.x, p2.y);
     }
-    
     ctx.stroke();
     ctx.setLineDash([]);
 }
@@ -291,22 +275,14 @@ function updateHistoryList() {
     routeHistory.forEach((route, index) => {
         let li = document.createElement('li');
         li.textContent = `${route.id} - Distance mer-terre: ${route.distanceSeaToLand.toFixed(2)}, 
-                          Distance terre-arrivée: ${route.distanceLandToEnd.toFixed(2)}, 
-                          Distance totale: ${route.totalDistance.toFixed(2)}`;
-        
-        if (index === 0 && routeHistory.length >= 5) {
-            li.textContent += " (Route la plus rapide mais peut-être pas la plus sûre!!!)";
-            li.style.color = "red";
-        }
-        
+            Distance terre-arrivée: ${route.distanceLandToEnd.toFixed(2)}, 
+            Distance totale: ${route.totalDistance.toFixed(2)}`;
         let playButton = document.createElement('button');
         playButton.textContent = 'Play';
         playButton.onclick = () => playRoute(index);
-        
         let deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.onclick = () => deleteRoute(index);
-        
         li.appendChild(playButton);
         li.appendChild(deleteButton);
         historyList.appendChild(li);
@@ -317,7 +293,6 @@ function playRoute(index) {
     let route = routeHistory[index];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    
     route.path.forEach((point, i) => {
         let color;
         if (point === seaStartPoint) {
@@ -331,7 +306,6 @@ function playRoute(index) {
         }
         drawPoint(point.x, point.y, color);
     });
-    
     drawRouteWithBezier(route.path, `hsl(${index * 60}, 100%, 50%)`);
 }
 
