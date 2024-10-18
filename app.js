@@ -65,6 +65,12 @@ canvas.addEventListener('click', function(event) {
     let y = event.offsetY;
     let newPoint = { x: x, y: y };
 
+    // Vérifier si le clic est sur la croix rouge
+    if (routeHistory.length === 5 && isClickOnCross(x, y)) {
+        window.open('labyrinthe.html', '_blank');
+        return;
+    }
+
     if (lastClickedPoint && Math.abs(lastClickedPoint.x - x) < 10 && Math.abs(lastClickedPoint.y - y) < 10) {
         clickCount++;
         if (clickCount > 4) clickCount = 1;
@@ -132,12 +138,19 @@ function drawPoint(x, y, color) {
 function drawCross(x, y, color) {
     ctx.beginPath();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.moveTo(x - 5, y - 5);
-    ctx.lineTo(x + 5, y + 5);
-    ctx.moveTo(x + 5, y - 5);
-    ctx.lineTo(x - 5, y + 5);
+    ctx.lineWidth = 5;
+    ctx.moveTo(x - 15, y - 15);
+    ctx.lineTo(x + 15, y + 15);
+    ctx.moveTo(x + 15, y - 15);
+    ctx.lineTo(x - 15, y + 15);
     ctx.stroke();
+}
+
+function isClickOnCross(x, y) {
+    if (!fixedEndPoint) return false;
+    let dx = Math.abs(x - fixedEndPoint.x);
+    let dy = Math.abs(y - fixedEndPoint.y);
+    return dx <= 15 && dy <= 15;
 }
 
 // Gestion de la suppression des points
