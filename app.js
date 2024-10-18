@@ -44,8 +44,15 @@ function redrawMap() {
 
     // Dessiner toutes les routes enregistrées
     routeHistory.forEach((route, index) => {
-        drawRouteWithBezier(route.path, `hsl(${index * 60}, 100%, 50%)`);
+        drawRouteWithBezier(route.path, `hsl(${index * 60}, 100%, 50%)`, false);
     });
+
+    // Si 5 routes ont été calculées, dessiner la meilleure en trait plein
+    if (routeHistory.length === 5) {
+        let bestRoute = findBestRoute();
+        drawRouteWithBezier(bestRoute.path, 'black', true);
+        drawCross(fixedEndPoint.x, fixedEndPoint.y, 'red');
+    }
 }
 
 let clickCount = 0;
@@ -120,6 +127,17 @@ function drawPoint(x, y, color) {
     ctx.arc(x, y, 5, 0, 2 * Math.PI);
     ctx.fillStyle = color;
     ctx.fill();
+}
+
+function drawCross(x, y, color) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.moveTo(x - 5, y - 5);
+    ctx.lineTo(x + 5, y + 5);
+    ctx.moveTo(x + 5, y - 5);
+    ctx.lineTo(x - 5, y + 5);
+    ctx.stroke();
 }
 
 // Gestion de la suppression des points
@@ -241,11 +259,15 @@ function calculateRouteDistance(routePoints) {
     return distance;
 }
 
-function drawRouteWithBezier(path, color) {
+function drawRouteWithBezier(path, color, isSolid = false) {
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
+    if (!isSolid) {
+        ctx.setLineDash([5, 5]);
+    } else {
+        ctx.setLineDash([]);
+    }
     for (let i = 0; i < path.length - 1; i++) {
         let p1 = path[i];
         let p2 = path[i + 1];
@@ -306,11 +328,18 @@ function playRoute(index) {
         }
         drawPoint(point.x, point.y, color);
     });
-    drawRouteWithBezier(route.path, `hsl(${index * 60}, 100%, 50%)`);
+    drawRouteWithBezier(route.path, `hsl(${index * 60}, 100%, 50%)`, true);
+    drawCross(fixedEndPoint.x, fixedEndPoint.y, 'red');
 }
 
 function deleteRoute(index) {
     routeHistory.splice(index, 1);
     updateHistoryList();
     redrawMap();
+}
+
+function findBestRoute() {
+    return routeHistory.reduce((best, current) => 
+        (current.totalDistance < best.totalDistance) ? current : best
+    );
 }
